@@ -6,18 +6,22 @@ desired_width = 320
 pd.set_option('display.width', desired_width)
 
 # Fill in the list of p_values that you want to apply the corrections to.
-p_values = sorted(np.asarray([0.036, 0.026, 0.0041, 0.076]))
+p_values = sorted(np.asarray([0.0012, 0.0060]))
 alpha, false_discovery_rate = 0.05, 0.05
-# Fill in the self-determined alphas (need to match the number of values in p_values)
-# self_set = [0.05, 0.01, 0.01, 0.05]
+# Fill in the self-determined alphas (need to match the number of values in p_values), does not auto-sort.
+self_set = [0.05, 0.05]
 
 
 def correction_tests(pvalues, a, q):
     n, pvalues, ind = len(pvalues), np.asarray(pvalues), np.argsort(p_values)
-    return a/float(n), a/(n+1-(ind+1)), ((ind+1.)/n) * q, 1-((1-a)**(1/n)), 1-((1-a)**(1/(n+1-(ind+1))))
+    sum_for_yek = []
+    for i in ind:
+        sum_for_yek.append(1/(i+1))
+    yek_false_discovery_rate = q / sum(sum_for_yek) ## volgens mij delen door de FDR(q) en niet de alpha(a)
+    return a/float(n), a/(n+1-(ind+1)), ((ind+1.)/n) * q, 1-((1-a)**(1/n)), 1-((1-a)**(1/(n+1-(ind+1)))), ((ind+1.)/n) * yek_false_discovery_rate
 
 
-result_bon, result_holm_bon, result_ben, result_sid, result_holm_sidak = correction_tests(p_values, a=alpha, q=false_discovery_rate)
+result_bon, result_holm_bon, result_ben, result_sid, result_holm_sidak, result_yek = correction_tests(p_values, a=alpha, q=false_discovery_rate)
 
 df = pd.DataFrame({'Hypotheses': ['Hypothesis {}'.format(i) for i in range(1, len(p_values)+1)],
                    'P-value': p_values,
@@ -26,7 +30,11 @@ df = pd.DataFrame({'Hypotheses': ['Hypothesis {}'.format(i) for i in range(1, le
                    'Sidak': result_sid,
                    'Holm-Bonferroni': result_holm_bon,
                    'Holm-Sidak': result_holm_sidak,
-                   'Benjamini-Hochberg': result_ben
-#                   ,'Self-determined': self_set
+                   'Benjamini-Hochberg': result_ben,
+                   'Benjamini-Yekutieli': result_yek,
+                   'Self-determined': self_set
                    })
 print(df)
+
+
+
