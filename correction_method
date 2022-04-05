@@ -1,0 +1,32 @@
+import pandas as pd
+import numpy as np
+
+pd.set_option("display.max_rows", None, "display.max_columns", None)
+desired_width = 320
+pd.set_option('display.width', desired_width)
+
+# Fill in the list of p_values that you want to apply the corrections to.
+p_values = sorted(np.asarray([0.036, 0.026, 0.0041, 0.076]))
+alpha, false_discovery_rate = 0.05, 0.05
+# Fill in the self-determined alphas (need to match the number of values in p_values)
+# self_set = [0.05, 0.01, 0.01, 0.05]
+
+
+def correction_tests(pvalues, a, q):
+    n, pvalues, ind = len(pvalues), np.asarray(pvalues), np.argsort(p_values)
+    return a/float(n), a/(n+1-(ind+1)), ((ind+1.)/n) * q, 1-((1-a)**(1/n)), 1-((1-a)**(1/(n+1-(ind+1))))
+
+
+result_bon, result_holm_bon, result_ben, result_sid, result_holm_sidak = correction_tests(p_values, a=alpha, q=false_discovery_rate)
+
+df = pd.DataFrame({'Hypotheses': ['Hypothesis {}'.format(i) for i in range(1, len(p_values)+1)],
+                   'P-value': p_values,
+                   'No correction': alpha,
+                   'Bonferroni': result_bon,
+                   'Sidak': result_sid,
+                   'Holm-Bonferroni': result_holm_bon,
+                   'Holm-Sidak': result_holm_sidak,
+                   'Benjamini-Hochberg': result_ben
+#                   ,'Self-determined': self_set
+                   })
+print(df)
